@@ -1,46 +1,55 @@
 package my.teach.request;
 
-import my.teach.server.HttpServer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-public class HttpRequestHandler implements IHttpRequestHandler {
-    private static final Logger LOG = LogManager.getLogger(HttpServer.class.getName());
-    private final List<String> requestData;
-    private final BufferedReader clientRequestData;
+public class HttpRequestHandler {
+    private static final char END_LINE_SYMBOL = '\n';
+    private static final String SEPARATOR_BETWEEN_HEAD_AND_BODY = "\r\n";
+    private static final String SPLIT_SPACE = " ";
+    private static final String SPLIT_SEPARATOR_SYMBOL = ":";
+    private final Map<String, String> headerList;
+    private final InputStream clientRequestData;
+    private String firstHeaderLine;
 
-    public HttpRequestHandler(final BufferedReader clientRequestData) throws IOException {
-        this.clientRequestData = clientRequestData;
-        requestData = new LinkedList<>();
-        clientRequestReader();
+    public HttpRequestHandler(final InputStream inputStreamFromClient) throws IOException {
+        this.clientRequestData = inputStreamFromClient;
+        headerList = new HashMap<>();
+        readAndSetClientRequest();
     }
 
-    @Override
-    public String getFilePath() {
-        String firstLine = requestData.get(0);
-        int startPathIndex = 0;
-        int lastPathIndex = 0;
-        for (int index = 0; index < firstLine.length(); index++) {
-            if (firstLine.charAt(index) == '/' && startPathIndex == 0) {
-                startPathIndex = index + 1;
-            }
-            if (firstLine.charAt(index) == ' ') {
-                lastPathIndex = index;
-            }
-        }
-        return firstLine.substring(startPathIndex, lastPathIndex);
-    }
-
-    private void clientRequestReader() throws IOException {
-        LOG.info("Client connected!");
+    private String readLine(InputStream inputStream) throws IOException {
+        StringBuilder readLine = new StringBuilder();
+        int oneSymbolFromInputStream;
         do {
-            String line = clientRequestData.readLine();
-            LOG.info(line);
-            requestData.add(line);
-        } while (clientRequestData.ready());
-        LOG.info("Client disconnected!");
+            oneSymbolFromInputStream = inputStream.read();
+            readLine.append((char) oneSymbolFromInputStream);
+        } while ((char) oneSymbolFromInputStream != END_LINE_SYMBOL);
+        return readLine.toString();
+    }
+
+    private void readAndSetClientRequest() throws IOException {
+        String nextHeaderLine = readLine(clientRequestData);
+        firstHeaderLine = nextHeaderLine;
+        while (!nextHeaderLine.equals(SEPARATOR_BETWEEN_HEAD_AND_BODY)) {
+            if (nextHeaderLine.contains(SPLIT_SEPARATOR_SYMBOL)) {
+                fillHeaderMap(nextHeaderLine);
+            }
+            nextHeaderLine = readLine(clientRequestData);
+        }
+    }
+
+    public String getResource() {
+        return firstHeaderLine.split(SPLIT_SPACE)[1].substring(1);
+    }
+
+    private void fillHeaderMap(String line) {
+        String[] separateLine = line.split(SPLIT_SEPARATOR_SYMBOL, 2);
+        headerList.put(separateLine[0], separateLine[1]);
+    }
+
+    public Map<String, String> getHeaderMap() {
+        return headerList;
     }
 }

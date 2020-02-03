@@ -1,57 +1,43 @@
 package my.teach.response;
 
-import my.teach.server.HttpServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.io.*;
 
-public class HttpResponseHandler implements IHttpResponseHandler {
-    private static final Logger LOG = LogManager.getLogger(HttpServer.class.getName());
-    private static final String LINE_SEPARATOR = System.lineSeparator();
-    private StringBuilder headStatusOk = new StringBuilder()
-            .append("HTTP/1.1 200 OK")
-            .append(LINE_SEPARATOR)
-            .append("Content-Type: text/html; charset=utf-8")
-            .append(LINE_SEPARATOR)
-            .append(LINE_SEPARATOR);
-    private StringBuilder headStatusNotFound = new StringBuilder()
-            .append("HTTP/1.1 404 Not Found")
-            .append(LINE_SEPARATOR)
-            .append("Content-Type: text/html; charset=utf-8")
-            .append(LINE_SEPARATOR)
-            .append(LINE_SEPARATOR)
-            .append("<h1>Not Found</h1>");
-    private final String filePath;
-    private PrintWriter senderOfHttpRequests;
+public class HttpResponseHandler {
+    private static final Logger LOG = LogManager.getLogger(HttpResponseHandler.class.getName());
+    private static final int OK = 200;
+    private final OutputStream writeHttpResponse;
+    private final int status;
+    private final String resource;
+    private final String responseHeader;
 
-    public HttpResponseHandler(PrintWriter senderOfHttpRequests, String filePath) {
-        this.filePath = filePath;
-        this.senderOfHttpRequests = senderOfHttpRequests;
+    public HttpResponseHandler(OutputStream writeHttpResponse, int status, String resource, String responseHeader) {
+        this.writeHttpResponse = writeHttpResponse;
+        this.status = status;
+        this.resource = resource;
+        this.responseHeader = responseHeader;
     }
 
-    @Override
-    public void sendHttpResponse() {
-        if (checkFilePath()) {
-            senderOfHttpRequests.println(headStatusOk.toString());
-            fileReader(senderOfHttpRequests);
+    public void sendHttpResponse() throws IOException {
+        if (status == OK) {
+            writeHttpResponse.write(responseHeader.getBytes());
+            readAndSetResource(writeHttpResponse);
         } else {
-            senderOfHttpRequests.println(headStatusNotFound.toString());
+            writeHttpResponse.write(responseHeader.getBytes());
         }
-        senderOfHttpRequests.flush();
+        writeHttpResponse.flush();
     }
 
-    private void fileReader(PrintWriter senderOfHttpRequests) {
-        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)))) {
-            String singleLine = null;
-            while ((singleLine = bufferedReader.readLine()) != null) {
-                senderOfHttpRequests.println(singleLine);
+    private void readAndSetResource(OutputStream senderOfHttpRequests) {
+        try (FileInputStream inputStreamResource = new FileInputStream(new File(resource))) {
+            int oneSymbol = inputStreamResource.read();
+            while (oneSymbol != -1) {
+                senderOfHttpRequests.write(oneSymbol);
+                oneSymbol = inputStreamResource.read();
             }
         } catch (IOException io) {
-            LOG.warn(io.getStackTrace());
+            LOG.warn(io);
         }
-    }
-
-    private boolean checkFilePath() {
-        return new File(filePath).exists();
     }
 }
