@@ -16,7 +16,6 @@
 
     <modules>
         <module>simple_http_server</module>
-        <module>Chapter_2_OOP</module>
     </modules>
 
     <dependencies>
