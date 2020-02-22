@@ -11,6 +11,7 @@ public class RequestReader {
     private static final int LIMIT_OF_ELEMENTS_GET = 2;
     private static final int KEY = 0;
     private static final int VALUE = 1;
+    private static final int EMPTY_LENGTH = 0;
     private final Map<String, String> headers;
 
     public RequestReader() {
@@ -20,7 +21,7 @@ public class RequestReader {
     public Request handleRequest(InputStream inputStream, int bufferSize, String resource) throws IOException {
         String firstLine = null;
         String oneLine = Utils.readLine(inputStream);
-        while (!(oneLine).equals(EMPTY_LINE)) {
+        while (!(oneLine).equals(EMPTY_LINE) && oneLine.length() != EMPTY_LENGTH) {
             firstLine = firstLine == null ? oneLine : firstLine;
             fillHeadersMap(oneLine);
             oneLine = Utils.readLine(inputStream);

@@ -15,15 +15,17 @@ public class HttpHandler {
     }
 
     public void handle(Request request, Response response, Session sessionIdStorage) {
-        UUID newUserId = sessionIdStorage.getNewUserId();
+        UUID newUserId = null;
         UUID oldUserID = sessionIdStorage.findUuid(Utils.getUserIdList(request.getHeaderRow("Cookie")));
-        response.setRootPath(request.getRootPath());
+        if (oldUserID == null) {
+            newUserId = sessionIdStorage.setUserIdAndReturn(sessionIdStorage.getNewUserId());
+            response.setUserId(newUserId);
+        }
         response.setBufferSize(request.getBufferSize());
         response.setStatus(Utils.isResourceExists(request.getResource()));
         response.setContextType(TEXT_HTML);
         response.setCharset(CHARSET_UTF_8);
         response.setDate(new Date());
-        response.setUserId(oldUserID != null ? null : sessionIdStorage.setUserIdAndReturn(newUserId));
         Utils.writeInfoAboutUserId(oldUserID, newUserId, sessionIdStorage);
         response.setResource(request.getResource());
         response.buildResponse();

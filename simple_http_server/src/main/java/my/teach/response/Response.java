@@ -12,6 +12,7 @@ public class Response {
     private static final String LINE_SEPARATOR = System.lineSeparator();
     private static final String SET_COOKIE = "Set-Cookie: ";
     private static final String USER_ID = "userId=";
+    private static final String NOT_FOUND_BODY = "<h1 style='text-align:center'>Resource not found</h1>";
     private boolean status;
     private int bufferSize;
     private UUID userId;
@@ -19,7 +20,6 @@ public class Response {
     private String charset;
     private Date date;
     private String resource;
-    private String rootPath;
 
     public Response() {
 
@@ -73,14 +73,6 @@ public class Response {
         return this.resource;
     }
 
-    public String getRootPath() {
-        return rootPath;
-    }
-
-    public void setRootPath(String rootPath) {
-        this.rootPath = rootPath;
-    }
-
     public boolean isStatus() {
         return status;
     }
@@ -93,7 +85,7 @@ public class Response {
                 .append(CHARSET).append(charset).append(LINE_SEPARATOR)
                 .append(DATE).append(date.toString()).append(LINE_SEPARATOR)
                 .append(getCookieRow()).append(LINE_SEPARATOR)
-                .append(LINE_SEPARATOR);
+                .append(LINE_SEPARATOR).append(!status ? NOT_FOUND_BODY : "");
         return response.toString();
     }
 }
